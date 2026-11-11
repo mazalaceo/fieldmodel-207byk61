@@ -74,7 +74,7 @@ details.how p{margin:var(--s2) 0 0;color:var(--ink-2);font-size:13px}
 details.how summary{cursor:pointer;font-weight:600;font-size:13px}
 .stage{position:relative;min-width:0;background:var(--bg3d);overflow:hidden}
 canvas{display:block;width:100%;height:100%}
-.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}.hl,.fl{touch-action:none}
 .hl{all:unset;position:absolute;left:0;top:0;pointer-events:auto;font:500 11px var(--mono);color:var(--ink);background:var(--glass);padding:1px 4px;border-radius:2px;cursor:pointer;white-space:nowrap;will-change:transform}
 .hl[aria-pressed=true]{background:var(--accent);color:var(--paper)}
 .fl{position:absolute;left:0;top:0;pointer-events:auto;cursor:pointer;font:500 11px var(--font);color:var(--ink);background:var(--glass);padding:0 4px;border-radius:2px;white-space:nowrap;will-change:transform;max-width:160px;overflow:hidden;text-overflow:ellipsis}
@@ -424,6 +424,17 @@ function showCurtain(u){reshow=()=>showCurtain(u);const r=u.r;if(u.curtain=='res
 // ---------- picking
 const RC=new THREE.Raycaster();let dn=null,touched=false;
 R.domElement.addEventListener('pointerdown',e=>{if(!e.isPrimary)return;dn=[e.clientX,e.clientY];if(tw)setY(tw.yb);tw=null});
+// phones: a two-finger pinch must zoom the map even when one finger lands on a label, a button or the info card
+const pzC=R.domElement,pzT=new Map(),pzF=new WeakSet();let pzN=0;
+const pzOn=e=>!(e.target.closest&&e.target.closest('#sat,#intro,#err'));
+function pzFw(type,e){const n=new PointerEvent(type,{pointerId:e.pointerId,pointerType:e.pointerType,isPrimary:false,clientX:e.clientX,clientY:e.clientY,screenX:e.screenX,screenY:e.screenY,button:e.button,buttons:e.buttons,bubbles:true,cancelable:true});pzF.add(n);pzC.dispatchEvent(n)}
+function pzAll(){pzT.forEach(p=>{if(!p.f){p.f=true;pzFw('pointerdown',p.e)}})}
+stage.addEventListener('pointerdown',e=>{if(e.pointerType!='touch'||pzF.has(e)||!pzOn(e))return;if(e.isPrimary){pzN=0;pzT.clear()}if(e.target===pzC){pzN++;pzAll()}else{pzT.set(e.pointerId,{e,f:false});if(pzN>0||pzT.size>1)pzAll()}},true);
+stage.addEventListener('pointermove',e=>{const p=pzT.get(e.pointerId);if(!p||pzF.has(e))return;p.e=e;if(p.f&&e.target!==pzC)pzFw('pointermove',e)},true);
+const pzEnd=e=>{if(e.pointerType!='touch'||pzF.has(e))return;const p=pzT.get(e.pointerId);if(p){pzT.delete(e.pointerId);if(p.f&&e.target!==pzC)pzFw(e.type,e)}else if(e.target===pzC)pzN=Math.max(0,pzN-1)};
+stage.addEventListener('pointerup',pzEnd,true);stage.addEventListener('pointercancel',pzEnd,true);
+stage.addEventListener('touchmove',e=>{if(e.touches.length>1&&pzOn(e))e.preventDefault()},{passive:false});
+stage.addEventListener('gesturestart',e=>{if(pzOn(e))e.preventDefault()});
 const v3=new THREE.Vector3();
 function scr(v){v3.copy(v);v3.y*=YS;v3.project(cam);return v3.z<1?[(v3.x+1)/2*SW,(1-v3.y)/2*SH]:null}
 function segD(px,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy,u=l?Math.max(0,Math.min(1,((px[0]-a[0])*dx+(px[1]-a[1])*dy)/l)):0;return Math.hypot(px[0]-a[0]-u*dx,px[1]-a[1]-u*dy)}
