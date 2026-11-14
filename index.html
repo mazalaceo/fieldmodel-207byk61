@@ -600,6 +600,12 @@ function labels(){const nr=near();for(const k in LL){if(nr||(/^\d/.test(k)&&!nbG
  const B=[];if(holeG.visible&&nr){HL.slice().sort((a,b)=>(b.h==sel)-(a.h==sel)).forEach(l=>{if(!place(l,-16,-18))return;v3.copy(l.p);v3.y*=YS;v3.project(cam);const x=(v3.x+1)/2*SW,y=(1-v3.y)/2*SH;if(B.some(q=>q[0]<x+23&&x-23<q[1]&&Math.abs(q[2]-y)<15))l.e.style.display='none';else B.push([x-23,x+23,y])})}else HL.forEach(l=>l.e.style.display='none');
  let n=0;PRIO.forEach(id=>{const l=LY[id];if(!l||!l.g.visible)return;l.features.forEach(f=>{if(n>=POOL.length||f.lg)return;const s=scr(f.v);if(!s||s[0]<0||s[1]<0||s[0]>SW||s[1]>SH)return;const tx=X(f.n),x0=s[0]+7,x1=x0+Math.min(160,9+tx.length*6.2);if(B.some(q=>q[0]<x1+4&&x0<q[1]+4&&Math.abs(q[2]-s[1])<15))return;B.push([x0-14,x1,s[1]]);const e=POOL[n++];e.style.display='';e._f=f;e.textContent=tx;e.style.transform='translate('+Math.round(s[0]+7)+'px,'+Math.round(s[1]-8)+'px)'})});for(;n<POOL.length;n++)POOL[n].style.display='none';
  if(nr)TK.forEach(l=>place(l,4,-7));else TK.forEach(l=>l.e.style.display='none');if(SG.I.visible&&GH.visible&&nr)place(WL,-40,-10);else WN.style.display='none';if(secG.visible)SECL.forEach(l=>place(l,-6,-9))}
+// ---------- the zoom pivot stays on the ground. Dragging the map slides the controls' pivot up into the air (or under the ground); zooming then
+// closes in on that invisible point and stalls far from the ground. After a drag, and before a zoom, the pivot is put back where the middle
+// of the view meets the ground. The picture does not move: only the distance the zoom works with changes.
+let pvT=0;function pvFix(){const n=performance.now();if(tw||rf||n-pvT<250)return;pvT=n;world.updateMatrixWorld(true);gg.computeBoundingSphere();gg.computeBoundingBox();
+ RC.setFromCamera(new THREE.Vector2(0,0),cam);const q=RC.intersectObjects([ground,nbMesh]);if(q.length&&q[0].distance>=C.minDistance&&q[0].distance<=C.maxDistance)C.target.copy(q[0].point)}
+C.addEventListener('end',pvFix);R.domElement.addEventListener('wheel',pvFix,true);
 // ---------- slow graphics: when frames get slow (zoomed in, every layer fills the screen) the picture is drawn with fewer pixels;
 // full sharpness comes back after a few fast seconds, and waits longer each time that turned out too much. "#diag" in the link shows a readout.
 const PR0=Math.min(devicePixelRatio,2);let PRc=PR0,prT=0,prN=0,prL=0,prOk=0,prWait=5,prUp=0;
