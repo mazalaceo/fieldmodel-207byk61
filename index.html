@@ -94,10 +94,18 @@ canvas{display:block;width:100%;height:100%}
 .lic{position:absolute;left:0;top:0;font:600 13px var(--font);color:var(--ink);background:var(--glass);padding:2px 8px;border-radius:2px;white-space:nowrap;will-change:transform}
 .warnl{position:absolute;left:0;top:0;font:500 10.5px var(--font);color:var(--accent);background:var(--glass);padding:1px 5px;border-radius:2px;white-space:nowrap;will-change:transform}
 .views{position:absolute;right:calc(var(--s3) + env(safe-area-inset-right,0px));top:var(--s3);max-width:calc(100% - 24px);overflow-x:auto;display:flex;border:1px solid var(--rule);border-radius:3px;background:var(--paper)}
-#mapkey{position:absolute;left:var(--s3);bottom:64px;max-width:min(300px,60%);max-height:50%;overflow:auto;background:var(--paper);border:1px solid var(--rule);border-radius:3px;padding:8px 10px;font-size:12px;color:var(--ink-2);display:grid;gap:3px}
-#mapkey b{color:var(--ink);font-weight:600}
+#mapkey{position:absolute;left:var(--s3);bottom:64px;max-width:min(300px,60%);max-height:50%;background:var(--paper);border:1px solid var(--rule);border-radius:3px;font-size:12px;color:var(--ink-2);display:flex;flex-direction:column;gap:0}
+#mapkey .mkt{all:unset;box-sizing:border-box;display:flex;align-items:flex-start;gap:6px;width:100%;padding:8px 10px;cursor:pointer;color:var(--ink);font:600 12px/1.35 var(--font);touch-action:manipulation}
+#mapkey .mkt:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+#mapkey .mkt i{flex:none;margin-top:4px;width:0;height:0;border:solid transparent;border-width:4px 0 4px 6px;border-left-color:currentColor}
+#mapkey:not(.shut) .mkt i{transform:rotate(90deg)}
+#mapkey .mkt span{min-width:0}
+#mapkey.shut .mkt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mapkey .mkb{min-height:0;overflow:auto;display:grid;gap:3px;padding:0 10px 8px}
+#mapkey.shut .mkb{display:none}
 #mapkey p{margin:0;line-height:1.35}
-#mapkey div{display:flex;align-items:center;gap:6px}
+#mapkey .mkb>div{display:flex;align-items:center;gap:6px}
+@media (pointer:coarse){#mapkey .mkt{min-height:44px;padding-block:14px}}
 @media(max-width:1250px){.hint{display:none}}
 .cmodel{position:absolute;right:calc(var(--s3) + env(safe-area-inset-right,0px));top:calc(var(--s3) + 38px);display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--rule);border-radius:3px;padding:4px 4px 4px 10px;font:500 12px var(--font);color:var(--ink-2)}
 .cmodel .seg{min-width:190px;background:var(--paper)}
@@ -373,7 +381,10 @@ function hdShow(){const on=curDrape=='vhr'&&uO.value>.5,d=cam.position.distanceT
   m.visible=want&&!!m.material.map;if(m.material.map&&!u.mid)n++}
  if(n>14)for(const m of HT){const u=m.userData;if(!u.mid&&!u.want&&m.material.map){m.material.map.dispose();m.material.map=null;m.material.needsUpdate=true}}}
 const DR=[{id:'photo',file:D.ground}].concat(D.drapes||[]);let curDrape='photo';
-function setDrape(id){const d=DR.find(x=>x.id==id)||DR[0];curDrape=d.id;shade();gm.map=tex(d.id=='photo'?D.ground:d.file);gm.needsUpdate=true;$('drape').value=d.id;$('drapeNote').textContent=d.id=='photo'?t('drapePhotoNote'):X(d.cap||'')+(d.meta?' · '+X(d.meta):'');{const mk=$('mapkey');mk.hidden=d.id=='photo'||ti>=0;mk.innerHTML='<b>'+esc(X(d.name||''))+'</b><p>'+esc(X(d.cap||''))+'</p>'+(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')}$('drapeKey').innerHTML=(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')}
+// ground-picture description box (#mapkey): the title line is a toggle; closed by default on narrow screens, then the person's own choice is remembered
+let mkOpen=(()=>{try{const v=localStorage.getItem('gunshandCapOpen');if(v==='1')return true;if(v==='0')return false}catch(_){}return innerWidth>=700})();
+$('mapkey').addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('.mkt');if(!b)return;mkOpen=!mkOpen;try{localStorage.setItem('gunshandCapOpen',mkOpen?'1':'0')}catch(_){}$('mapkey').classList.toggle('shut',!mkOpen);b.setAttribute('aria-expanded',mkOpen)});
+function setDrape(id){const d=DR.find(x=>x.id==id)||DR[0];curDrape=d.id;shade();gm.map=tex(d.id=='photo'?D.ground:d.file);gm.needsUpdate=true;$('drape').value=d.id;$('drapeNote').textContent=d.id=='photo'?t('drapePhotoNote'):X(d.cap||'')+(d.meta?' · '+X(d.meta):'');{const mk=$('mapkey');mk.hidden=d.id=='photo'||ti>=0;mk.classList.toggle('shut',!mkOpen);mk.innerHTML='<button type="button" class="mkt" aria-expanded="'+mkOpen+'" aria-controls="mapkeyBody"><i></i><span>'+esc(X(d.name||''))+'</span></button><div class="mkb" id="mapkeyBody"><p>'+esc(X(d.cap||''))+'</p>'+(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')+'</div>'}$('drapeKey').innerHTML=(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')}
 // ---------- grid, axis, ticks
 const grid=new THREE.GridHelper(900,9,css('--grid'),css('--grid'));grid.position.set(-10,-158,-30);grid.material.transparent=true;grid.material.opacity=.45;world.add(grid);
 const AX=[WD[1]+20,0,-WD[2]+20];world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(AX[0],-158,AX[2]),new THREE.Vector3(AX[0],85,AX[2])]),new THREE.LineBasicMaterial({color:css('--axis')})));
