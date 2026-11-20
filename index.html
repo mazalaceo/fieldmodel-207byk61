@@ -101,6 +101,9 @@ canvas{display:block;width:100%;height:100%}
 #mapkey:not(.shut) .mkt i{transform:rotate(90deg)}
 #mapkey .mkt span{min-width:0}
 #mapkey.shut .mkt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mapkey.busy .mkt span::after{content:" …"}
+#mapkey.busy .mkt i{animation:mkp .8s ease-in-out infinite alternate}
+@keyframes mkp{from{opacity:1}to{opacity:.15}}
 #mapkey .mkb{min-height:0;overflow:auto;display:grid;gap:3px;padding:0 10px 8px}
 #mapkey.shut .mkb{display:none}
 #mapkey p{margin:0;line-height:1.35}
@@ -334,6 +337,10 @@ const T=D.terrain,gg=new THREE.BufferGeometry(),gp=new Float32Array(T.nx*T.ny*3)
 for(let j=0;j<T.ny;j++)for(let i=0;i<T.nx;i++){const k=j*T.nx+i,e=T.w+(T.e-T.w)*i/(T.nx-1),n=T.n-(T.n-T.s)*j/(T.ny-1);gp.set([e,T.z[k]/10,-n],k*3);gu.set([i/(T.nx-1),1-j/(T.ny-1)],k*2);if(i<T.nx-1&&j<T.ny-1)gi.push(k,k+T.nx,k+1,k+1,k+T.nx,k+T.nx+1)}
 gg.setAttribute('position',new THREE.BufferAttribute(gp,3));gg.setAttribute('uv',new THREE.BufferAttribute(gu,2));gg.setIndex(gi);gg.computeVertexNormals();
 const gIx={};let gQ=-1;function groundOrder(){const q=(cam.position.x<C.target.x?1:0)+(cam.position.z<C.target.z?2:0);if(q===gQ)return;gQ=q;if(!gIx[q]){const a=new Uint16Array((T.nx-1)*(T.ny-1)*6);let n=0;for(let y=0;y<T.ny-1;y++){const j=q&2?T.ny-2-y:y;for(let x=0;x<T.nx-1;x++){const i=q&1?T.nx-2-x:x,k=j*T.nx+i;a[n++]=k;a[n++]=k+T.nx;a[n++]=k+1;a[n++]=k+1;a[n++]=k+T.nx;a[n++]=k+T.nx+1}}gIx[q]=new THREE.BufferAttribute(a,1)}gg.setIndex(gIx[q])}
+// weak connections on site: a picture whose download failed used to stay blank until the page was reloaded. Every picture is now asked for again until it arrives.
+{const L0=THREE.TextureLoader.prototype.load;THREE.TextureLoader.prototype.load=function(url,onLoad,onProgress,onError){const me=this;let n=0;const ok=t=>{t.userData.ok=1;if(onLoad)onLoad(t);texBusy()},again=()=>{n++;setTimeout(()=>{const il=new THREE.ImageLoader(me.manager);il.setCrossOrigin(me.crossOrigin);il.setPath(me.path);il.load(url,img=>{tx.image=img;tx.needsUpdate=true;ok(tx)},undefined,again)},Math.min(8000,1500*n))};const tx=L0.call(this,url,ok,onProgress,e=>{if(onError)onError(e);texBusy();again()});return tx}}
+// the label of the chosen ground picture shows "…" until that picture has arrived
+function texBusy(){try{$('mapkey').classList.toggle('busy',!!(gm.map&&!gm.map.userData.ok))}catch(e){}}
 const TXL=new THREE.TextureLoader(),texCache={};function tex(u){if(!texCache[u]){const x=TXL.load(IM(u));x.encoding=THREE.sRGBEncoding;x.anisotropy=4;texCache[u]=x}return texCache[u]}
 const WD=[D.window[0]-120,D.window[1]+120,D.window[2]-120,D.window[3]+120],uA={value:.18},uO={value:1},uHS={value:null},uS={value:0};
 let HSR=false;new THREE.TextureLoader().load((D.img&&D.img['pub/relief_shade.jpg'])||'pub/relief_shade.jpg',x=>{uHS.value=x;HSR=true;shade()});
@@ -384,7 +391,7 @@ const DR=[{id:'photo',file:D.ground}].concat(D.drapes||[]);let curDrape='photo';
 // ground-picture description box (#mapkey): the title line is a toggle; closed by default on narrow screens, then the person's own choice is remembered
 let mkOpen=(()=>{try{const v=localStorage.getItem('gunshandCapOpen');if(v==='1')return true;if(v==='0')return false}catch(_){}return innerWidth>=700})();
 $('mapkey').addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('.mkt');if(!b)return;mkOpen=!mkOpen;try{localStorage.setItem('gunshandCapOpen',mkOpen?'1':'0')}catch(_){}$('mapkey').classList.toggle('shut',!mkOpen);b.setAttribute('aria-expanded',mkOpen)});
-function setDrape(id){const d=DR.find(x=>x.id==id)||DR[0];curDrape=d.id;shade();gm.map=tex(d.id=='photo'?D.ground:d.file);gm.needsUpdate=true;$('drape').value=d.id;$('drapeNote').textContent=d.id=='photo'?t('drapePhotoNote'):X(d.cap||'')+(d.meta?' · '+X(d.meta):'');{const mk=$('mapkey');mk.hidden=d.id=='photo'||ti>=0;mk.classList.toggle('shut',!mkOpen);mk.innerHTML='<button type="button" class="mkt" aria-expanded="'+mkOpen+'" aria-controls="mapkeyBody"><i></i><span>'+esc(X(d.name||''))+'</span></button><div class="mkb" id="mapkeyBody"><p>'+esc(X(d.cap||''))+'</p>'+(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')+'</div>'}$('drapeKey').innerHTML=(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')}
+function setDrape(id){const d=DR.find(x=>x.id==id)||DR[0];curDrape=d.id;shade();gm.map=tex(d.id=='photo'?D.ground:d.file);gm.needsUpdate=true;$('drape').value=d.id;$('drapeNote').textContent=d.id=='photo'?t('drapePhotoNote'):X(d.cap||'')+(d.meta?' · '+X(d.meta):'');{const mk=$('mapkey');mk.hidden=d.id=='photo'||ti>=0;mk.classList.toggle('shut',!mkOpen);mk.innerHTML='<button type="button" class="mkt" aria-expanded="'+mkOpen+'" aria-controls="mapkeyBody"><i></i><span>'+esc(X(d.name||''))+'</span></button><div class="mkb" id="mapkeyBody"><p>'+esc(X(d.cap||''))+'</p>'+(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('')+'</div>'}$('drapeKey').innerHTML=(d.key||[]).map(k=>'<div><span class="sw" style="background:'+esc(k[0])+'"></span><span>'+esc(X(k[1]))+'</span></div>').join('');texBusy()}
 // ---------- grid, axis, ticks
 const grid=new THREE.GridHelper(900,9,css('--grid'),css('--grid'));grid.position.set(-10,-158,-30);grid.material.transparent=true;grid.material.opacity=.45;world.add(grid);
 const AX=[WD[1]+20,0,-WD[2]+20];world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(AX[0],-158,AX[2]),new THREE.Vector3(AX[0],85,AX[2])]),new THREE.LineBasicMaterial({color:css('--axis')})));
