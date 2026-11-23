@@ -260,7 +260,7 @@ details.satmore>summary{cursor:pointer;font:600 16px var(--font);color:var(--ink
       <section class="key"><h2 data-i="legend" style="margin:0"></h2>
         <div class="kl"><span class="sw" style="background:var(--coal);height:5px;border-radius:3px"></span><span data-i="kBoth"></span></div>
         <div class="kl"><span class="sw" style="background:var(--coal1);height:5px;border-radius:3px"></span><span data-i="kOne"></span></div>
-        <div class="kl"><span class="sw" style="background:#c9d0da;opacity:.45"></span><span data-i="kZone"></span></div>
+        <div class="kl"><span class="sw" style="background:#7f9cc0;opacity:.6"></span><span data-i="kZone"></span></div>
         <div class="ks"><span class="sw solid"></span><span data-i="kSolid"></span></div>
         <div><span class="sw ghost"></span><span data-i="kGhost"></span></div>
         <div class="ks"><span class="sw" style="background:var(--seam-1);height:6px;width:12px;opacity:.7"></span><span data-i="kMark"></span></div>
@@ -331,11 +331,11 @@ SEAMS.forEach(s=>{const d=D.seams[s],N=d.v.length/4;const pos=new Float32Array(N
  const grp=new THREE.Group();const mk=(ix,op)=>{const g=new THREE.BufferGeometry();g.setAttribute('position',G.getAttribute('position'));g.setAttribute('color',G.getAttribute('color'));g.setAttribute('normal',G.getAttribute('normal'));g.setIndex(ix);
   const mt=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.62,metalness:.04,side:THREE.DoubleSide,transparent:op<1,opacity:op,depthWrite:op>=1});if(op>=1)mt.onBeforeCompile=SHADE;return new THREE.Mesh(g,mt)};
  const m1=mk(idx[1],1),m0=mk(idx[0],.34);m1.userData={seam:s,solid:1};m0.userData={seam:s,solid:0};m0.visible=false;m0.renderOrder=SEAMS.indexOf(s)+1;GM.push(m0);grp.add(m1);grp.add(m0);world.add(grp);SG[s]=grp;GEO[s]={col,T,N,attr:G.getAttribute('color'),G,d,grp,m1,m0}});
-let PM='seam',TB=0,HM=null;const PALE='#c9d0da';function paint(mode){PM=mode;SEAMS.forEach(s=>{const g=GEO[s],c=new THREE.Color(TB?css(CV[s]):PALE);for(let i=0;i<g.N;i++){const v=mode=='seam'?c:ramp(g.T[i]);g.col.set([v.r,v.g,v.b],i*3);g.col.set([v.r,v.g,v.b],(g.N+i)*3)}g.attr.needsUpdate=true})}
+let PM='seam',TB=0,HM=null;const PALE='#7f9cc0';function paint(mode){PM=mode;SEAMS.forEach(s=>{const g=GEO[s],c=new THREE.Color(TB?css(CV[s]):PALE);for(let i=0;i<g.N;i++){const v=mode=='seam'?c:ramp(g.T[i]);g.col.set([v.r,v.g,v.b],i*3);g.col.set([v.r,v.g,v.b],(g.N+i)*3)}g.attr.needsUpdate=true})}
 paint('seam');
 // coal model. 0 = as logged: the study's bands are pale and see-through, the coal is drawn as discs at the holes. 1 = the study's bands drawn solid.
 // The bands keep the thickness of the study's drawing in both (nothing is thickened or thinned).
-function setThick(v){TB=v;SEAMS.forEach(s=>{const g=GEO[s];[[g.m1,v?1:.17],[g.m0,v?.34:.08]].forEach(([m,o])=>{const mt=m.material;mt.opacity=o;mt.transparent=o<1;mt.depthWrite=o>=1;mt.needsUpdate=true});g.m1.renderOrder=v?0:SEAMS.indexOf(s)+1});paint(PM);if(HM)HM()}
+function setThick(v){TB=v;SEAMS.forEach(s=>{const g=GEO[s];[[g.m1,v?1:.38],[g.m0,v?.34:.12]].forEach(([m,o])=>{const mt=m.material;mt.opacity=o;mt.transparent=o<1;mt.depthWrite=o>=1;mt.needsUpdate=true});g.m1.renderOrder=v?0:SEAMS.indexOf(s)+1});paint(PM);if(HM)HM()}
 setThick(0);
 function seamVis(){SEAMS.forEach(s=>SG[s].visible=solo?solo==s:on[s])}
 // ---------- ground
@@ -412,13 +412,14 @@ D.holes.forEach(h=>{const x=h.e,z=-h.n;tube(x,h.z,h.z-h.td,z,.9,hmat);for(const 
 // ---------- coal discs: every stretch that the logs of a hole call coal, drawn only at that hole, at its logged depth and thickness.
 // h.mk = [from, to, tone, dz/dE, dz/dN]; tone 2 = both logs call it coal (white), 1 = one log only (brown). 20 m across and tilted like the
 // study's bands at that hole: width and tilt are drawing choices. Nothing is joined between holes.
+// The discs are drawn after the see-through bands (so a band does not wash them out) and before the ground (so solid ground still hides them).
 const MKR=10,MKN=24,mkG=new THREE.Group(),MKM=[];holeG.add(mkG);
 [2,1].forEach(tn=>{const P=[],I=[],own=[];D.holes.forEach(h=>(h.mk||[]).forEach(m=>{if(m[2]!=tn)return;const b=P.length/3,x=h.e,z=-h.n,yt=h.z-m[0],yb=h.z-m[1];
   for(let k=0;k<MKN;k++){const a=k/MKN*Math.PI*2,dx=Math.cos(a)*MKR,dn=Math.sin(a)*MKR,dy=m[3]*dx+m[4]*dn;P.push(x+dx,yt+dy,z-dn,x+dx,yb+dy,z-dn)}
   P.push(x,yt,z,x,yb,z);const ct=b+2*MKN,cb=ct+1;
   for(let k=0;k<MKN;k++){const k2=(k+1)%MKN,t0=b+2*k,b0=t0+1,t1=b+2*k2,b1=t1+1;I.push(ct,t1,t0,cb,b0,b1,t0,t1,b0,t1,b1,b0);own.push(h,h,h,h)}}));
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setIndex(I);g.computeVertexNormals();
- const o=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:css(tn==2?'--coal':'--coal1'),roughness:.75,metalness:0,side:THREE.DoubleSide,flatShading:true}));o.userData={mk:own};mkG.add(o);MKM.push(o)});
+ const o=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:css(tn==2?'--coal':'--coal1'),roughness:.75,metalness:0,side:THREE.DoubleSide,flatShading:true,transparent:true}));o.renderOrder=4.5;o.userData={mk:own};mkG.add(o);MKM.push(o)});
 const mkSum=(h,n)=>(h.mk||[]).reduce((a,m)=>a+(m[2]==n?m[1]-m[0]:0),0);
 HM=()=>{mkG.visible=!TB;PKT.forEach(o=>o.visible=!!TB);CT.forEach(o=>o.visible=!!TB);document.documentElement.classList.toggle('study',!!TB)};HM();
 // ---------- sections
